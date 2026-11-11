@@ -67,6 +67,37 @@ $link.WorkingDirectory = $AppDir
 $link.IconLocation = $Icon
 $link.Description = 'Remote control for Samsung TVs and Apple TV'
 $link.Save()
+# The app names itself "tvremote" to Windows (SetCurrentProcessExplicitAppUserModelID in remote_qt.py). The
+# taskbar takes a window's icon and pinning from the shortcut with that same ID; without one it shows
+# pythonw.exe's icon. WScript.Shell can't set it, so this goes through the shortcut's property store.
+Add-Type -Namespace TvRemote -Name Shortcut -MemberDefinition @'
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
+public struct PropertyKey { public Guid fmtid; public uint pid; }
+[StructLayout(LayoutKind.Explicit)]
+public struct PropVariant { [FieldOffset(0)] public ushort vt; [FieldOffset(8)] public IntPtr p; }
+[ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface IPropertyStore {
+    void GetCount(out uint count);
+    void GetAt(uint index, out PropertyKey key);
+    void GetValue(ref PropertyKey key, out PropVariant value);
+    void SetValue(ref PropertyKey key, ref PropVariant value);
+    void Commit();
+}
+[DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+static extern void SHGetPropertyStoreFromParsingName(string path, IntPtr bindCtx, int flags, ref Guid iid,
+    [MarshalAs(UnmanagedType.Interface)] out IPropertyStore store);
+public static void SetAppId(string lnk, string appId) {
+    Guid iid = typeof(IPropertyStore).GUID;
+    IPropertyStore store;
+    SHGetPropertyStoreFromParsingName(lnk, IntPtr.Zero, 2 /* GPS_READWRITE */, ref iid, out store);
+    // PKEY_AppUserModel_ID, a VT_LPWSTR string
+    var key = new PropertyKey { fmtid = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), pid = 5 };
+    var value = new PropVariant { vt = 31, p = Marshal.StringToCoTaskMemUni(appId) };
+    try { store.SetValue(ref key, ref value); store.Commit(); }
+    finally { Marshal.FreeCoTaskMem(value.p); Marshal.ReleaseComObject(store); }
+}
+'@
+[TvRemote.Shortcut]::SetAppId($Shortcut, 'tvremote')
 
 # tvremote:// links (a dashboard tile) open the remote; tvremote://cast also opens the cast window.
 $Scheme = 'HKCU:\Software\Classes\tvremote'
