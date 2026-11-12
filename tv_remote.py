@@ -49,7 +49,7 @@ def config_dir():
 CONFIG = config_dir() / "config.json"
 # Stand-ins for a TV that isn't set up yet (addresses reserved for documentation: RFC 5737, RFC 7042).
 UNSET_HOST, UNSET_MAC = "192.0.2.10", "00:00:5e:00:53:01"
-DEFAULTS = {"host": UNSET_HOST, "mac": UNSET_MAC, "name": "Windows Remote" if WINDOWS else "Linux Remote", "token": None, "apps": [],
+DEFAULTS = {"host": UNSET_HOST, "mac": UNSET_MAC, "name": "Windows Remote" if WINDOWS else "Linux Remote", "token": None, "apps": [],  # nosec B105: no token until paired
             "device": "samsung"}
 DEVICES = {"samsung": "Samsung TV", "appletv": "Apple TV"}  # "device" in the config: the one in use
 # Popular apps and their publicly reported Tizen app IDs (community lists; Samsung publishes none). Some
@@ -316,7 +316,8 @@ class TV:
         self.lock = threading.Lock()
 
     def info(self, host=None):
-        with urllib.request.urlopen(f"http://{host or self.host}:8001/api/v2/", timeout=2) as r:
+        url = f"http://{host or self.host}:8001/api/v2/"
+        with urllib.request.urlopen(url, timeout=2) as r:  # nosec B310: always http://, only the TV host varies
             return json.load(r)
 
     def power_state(self):
@@ -539,7 +540,7 @@ class TV:
         if not APP_ID_RE.fullmatch(app_id):
             raise ValueError(f"{app_id!r} isn't an app ID (letters, digits, dots, dashes, underscores)")
         try:
-            with urllib.request.urlopen(self._app_url(app_id), timeout=3) as r:
+            with urllib.request.urlopen(self._app_url(app_id), timeout=3) as r:  # nosec B310: http only
                 return {"appId": app_id, "name": str(json.load(r)["name"])}
         except urllib.error.HTTPError as e:
             if e.code == 404:
@@ -584,7 +585,7 @@ class TV:
         # POST to /api/v2/applications/<id> works.
         req = urllib.request.Request(self._app_url(app["appId"]), method="POST")
         try:
-            urllib.request.urlopen(req, timeout=5).close()
+            urllib.request.urlopen(req, timeout=5).close()  # nosec B310: _app_url is http only
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 raise RuntimeError(f"{app['name']} isn't installed on the TV any more "

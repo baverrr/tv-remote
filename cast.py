@@ -281,7 +281,7 @@ class Renderer:
             "Content-Type": 'text/xml; charset="utf-8"',
             "SOAPACTION": f'"urn:schemas-upnp-org:service:AVTransport:1#{action}"'})
         try:
-            with urllib.request.urlopen(req, timeout=8) as r:
+            with urllib.request.urlopen(req, timeout=8) as r:  # nosec B310: self.url is http://tv_host
                 return r.read().decode(errors="replace")
         except urllib.error.HTTPError as e:
             detail = re.search(r"<errorDescription>(.*?)</errorDescription>", e.read().decode(errors="replace"))

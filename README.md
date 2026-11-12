@@ -130,6 +130,7 @@ Commands go to the device you used last. Add `--device samsung` or `--device app
   ```
 
 - Re-render the screenshots: `venv/bin/python -I tools/screenshots.py`
+- Security check: `bandit -r .` reads its settings from `.bandit`, which says why each one is there.
 </details>
 
 ## License

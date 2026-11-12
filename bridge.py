@@ -187,7 +187,8 @@ def serve(tv, args):
         return
     ports = [a for a in args if a.isdigit()]
     port = int(ports[0]) if ports else PORT
-    listen = tv.root.get("bridge_listen") or "0.0.0.0"
+    # All interfaces on purpose: the ESP32 remote reaches it over the LAN, and every request needs the token.
+    listen = tv.root.get("bridge_listen") or "0.0.0.0"  # nosec B104
     try:
         server = Bridge(tv, (listen, port))
     except OSError as e:  # not the TV's fault, so not cli()'s "Couldn't reach the TV"

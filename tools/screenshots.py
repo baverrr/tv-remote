@@ -35,7 +35,7 @@ def save(pixmap, path):
 
 def main():
     core.CONFIG = Path(tempfile.mkdtemp()) / "config.json"  # never the real config
-    core.CONFIG.write_text(json.dumps({"host": "192.0.2.20", "mac": "00:00:5e:00:53:20", "token": "x",
+    core.CONFIG.write_text(json.dumps({"host": "192.0.2.20", "mac": "00:00:5e:00:53:20", "token": "x",  # nosec B105: fake token for screenshots
                                        "apps": [{"appId": i, "name": n} for i, n in APPS]}))
     core.TV.power_state = lambda self: "on"
     core.TV.connect = lambda self: self.on_event("connected", None)
